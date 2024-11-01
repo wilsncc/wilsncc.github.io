@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Linux on Ross' Most Humble Weblog</title><link>https://wilsn.cc/tags/linux/</link><description>Recent content in Linux on Ross' Most Humble Weblog</description><generator>Hugo -- gohugo.io</generator><language>en-gb</language><lastBuildDate>Sat, 28 Sep 2024 20:44:00 +0200</lastBuildDate><atom:link href="https://wilsn.cc/tags/linux/index.xml" rel="self" type="application/rss+xml"/><item><title>Setting up a Linux Service Fabric cluster in 2024</title><link>https://wilsn.cc/2024/09/linux-service-fabric-cluster/</link><pubDate>Sat, 28 Sep 2024 20:44:00 +0200</pubDate><guid>https://wilsn.cc/2024/09/linux-service-fabric-cluster/</guid><description>&lt;img src="https://wilsn.cc/2024/09/linux-service-fabric-cluster/sf-logo.png" alt="Featured image of post Setting up a Linux Service Fabric cluster in 2024" />&lt;p>&lt;strong>tl;dr&lt;/strong>: follow the &lt;a class="link" href="https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-get-started-linux?tabs=sdksetupubuntu%2Clocalclusteroneboxcontainer#manual-installation" target="_blank" rel="noopener"
+>Manual installation&lt;/a> steps and ensure that you have &lt;code>en_US.UTF-8&lt;/code> locale installed (&lt;code>dpkg-reconfigure locales&lt;/code>)&lt;/p>
+&lt;hr>
+&lt;p>Since I working briefly at a Dutch-Brazilian start-up that ran Service Fabric in production, I have always been curious about it. My first job thereafter was as a platform engineer, specifically focussed on Azure Kubernetes Service; Service Fabric and Kubernetes are often seen as similar, or at lest somewhat comparable.&lt;/p>
+&lt;p>I have tried a few times since leaving said start-up to setup a Service Fabric cluster myself. Using the managed Azure service works as expected, but is obviously not free. Creating a self-hosted Windows cluster is pretty straightforward; there&amp;rsquo;s an installer and a special tool that runs in the tray which lets you create or destroy a local 1-node or 5-node cluster with just a click&lt;/p>
+&lt;p>But creating a self-hosted Linux cluster proved to be more challenging.&lt;/p>
+&lt;h2 id="the-microsoft-documentation">The Microsoft documentation
+&lt;/h2>&lt;p>My main issue here is that the documentation is not up to date.&lt;/p>
+&lt;p>There is of course a page on Microsoft Learn which instructs you in how to setup a Service Fabric cluster on Linux, and if you look at the &lt;a class="link" href="https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-get-started-linux?tabs=sdksetupubuntu%2Clocalclusteroneboxcontainer#script-installation" target="_blank" rel="noopener"
+>Script installation&lt;/a> section, you will find a &lt;a class="link" href="https://raw.githubusercontent.com/Azure/service-fabric-scripts-and-templates/master/scripts/SetupServiceFabric/SetupServiceFabric.sh" target="_blank" rel="noopener"
+>link to a script hosted on GitHub&lt;/a>.&lt;/p>
+&lt;p>Said script contains the following code:&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;span class="lnt">5
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">&lt;span class="line">&lt;span class="cl">Distribution=`lsb_release -cs`
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">if [%[ &amp;#34;xenial&amp;#34; != &amp;#34;$Distribution&amp;#34; &amp;amp;&amp;amp; &amp;#34;bionic&amp;#34; != &amp;#34;$Distribution&amp;#34; ]]; then
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> echo &amp;#34;Service Fabric is not supported on $Distribution&amp;#34;
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> exit -1
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">fi
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>This code causes the script to fail with an error if the version of Ubuntu you are running (did I mention you must only use Ubuntu?) is neither &lt;em>Xenial Xerus&lt;/em> (16.04) nor &lt;em>Bionic Beaver&lt;/em> (18.04). Whilst both being Long-Term Support releases, at the time of writing, both versions are into their final lifecycle phase i.e. &lt;em>extended security maintenance&lt;/em> i.e. critical patches only.&lt;/p>
+&lt;p>This is not what you want for a &lt;em>new&lt;/em> production system. Funnily enough, it&amp;rsquo;s also not what Microsoft deliver with their Azure Service Fabric product! Anyway, we know from the Service Fabric release notes that later versions of Ubuntu are supported; versions which are still in the standard support phase. For example, the &lt;a class="link" href="https://github.com/microsoft/service-fabric/blob/master/release_notes/Service_Fabric_ReleaseNotes_101CU4.md" target="_blank" rel="noopener"
+>release notes for Service Fabric 10.1 CU 4&lt;/a> show that the &amp;lsquo;Service Fabric Runtime&amp;rsquo; package supports only &amp;lsquo;Ubuntu 20&amp;rsquo; and &amp;lsquo;Windows&amp;rsquo;. So, we must surely be able to use Ubuntu 20!&lt;/p>
+&lt;p>Well, we can. And it&amp;rsquo;s as simple as following the steps listed in &lt;a class="link" href="https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-get-started-linux?tabs=sdksetupubuntu%2Clocalclusteroneboxcontainer#manual-installation" target="_blank" rel="noopener"
+>Manual installation&lt;/a> instead. This worked for me with an Ubuntu 20.04 VM.&lt;/p>
+&lt;h2 id="locale-issue">Locale issue
+&lt;/h2>&lt;p>Installation instructions were not the only option. It appears that your OS &lt;em>must&lt;/em> be configured with the correct locale i.e. &lt;code>en_US.UTF-8&lt;/code>.&lt;/p>
+&lt;p>In my case, &lt;code>servicefabric.service&lt;/code> would not start&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;span class="lnt">19
+&lt;/span>&lt;span class="lnt">20
+&lt;/span>&lt;span class="lnt">21
+&lt;/span>&lt;span class="lnt">22
+&lt;/span>&lt;span class="lnt">23
+&lt;/span>&lt;span class="lnt">24
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">root@ball:/home/ross# systemctl status servicefabric
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">● servicefabric.service - ServiceFabric Daemon
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> Loaded: loaded &lt;span class="o">(&lt;/span>/etc/systemd/system/servicefabric.service&lt;span class="p">;&lt;/span> enabled&lt;span class="p">;&lt;/span> vendor preset: enabled&lt;span class="o">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> Active: active &lt;span class="o">(&lt;/span>running&lt;span class="o">)&lt;/span> since Thu 2024-09-26 11:34:45 UTC&lt;span class="p">;&lt;/span> 6s ago
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> Main PID: &lt;span class="m">3504&lt;/span> &lt;span class="o">(&lt;/span>starthost.sh&lt;span class="o">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> Tasks: &lt;span class="m">112&lt;/span> &lt;span class="o">(&lt;/span>limit: 3410&lt;span class="o">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> Memory: 237.1M
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> CGroup: /system.slice/servicefabric.service
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> ├─3504 /bin/bash /opt/microsoft/servicefabric/bin/starthost.sh
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> ├─3616 /opt/microsoft/servicefabric/bin/FabricHost -c -skipfabricsetup
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> ├─3669 /usr/bin/dockerd -H unix:///var/run/docker.sock --pidfile /home/sfuser/sfdevcluster/data/_sf_docker_pid/133718240874061580_sfdocker.pid
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> ├─3697 dotnet FabricCAS.dll
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> └─3698 dotnet FabricDCA.dll
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Sep &lt;span class="m">26&lt;/span> 11:34:47 ball starthost.sh&lt;span class="o">[&lt;/span>3757&lt;span class="o">]&lt;/span>: terminating with uncaught exception of &lt;span class="nb">type&lt;/span> std::runtime_error: collate_byname&amp;lt;char&amp;gt;::collate_byname failed to construct &lt;span class="k">for&lt;/span> en_US.UTF-8
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Sep &lt;span class="m">26&lt;/span> 11:34:47 ball starthost.sh&lt;span class="o">[&lt;/span>3774&lt;span class="o">]&lt;/span>: terminating with uncaught exception of &lt;span class="nb">type&lt;/span> std::runtime_error: collate_byname&amp;lt;char&amp;gt;::collate_byname failed to construct &lt;span class="k">for&lt;/span> en_US.UTF-8
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Sep &lt;span class="m">26&lt;/span> 11:34:47 ball starthost.sh&lt;span class="o">[&lt;/span>3808&lt;span class="o">]&lt;/span>: terminating with uncaught exception of &lt;span class="nb">type&lt;/span> std::runtime_error: collate_byname&amp;lt;char&amp;gt;::collate_byname failed to construct &lt;span class="k">for&lt;/span> en_US.UTF-8
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Sep &lt;span class="m">26&lt;/span> 11:34:47 ball starthost.sh&lt;span class="o">[&lt;/span>3807&lt;span class="o">]&lt;/span>: terminating with uncaught exception of &lt;span class="nb">type&lt;/span> std::runtime_error: collate_byname&amp;lt;char&amp;gt;::collate_byname failed to construct &lt;span class="k">for&lt;/span> en_US.UTF-8
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Sep &lt;span class="m">26&lt;/span> 11:34:48 ball starthost.sh&lt;span class="o">[&lt;/span>3669&lt;span class="o">]&lt;/span>: &lt;span class="nv">time&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;2024-09-26T11:34:48.200147262Z&amp;#34;&lt;/span> &lt;span class="nv">level&lt;/span>&lt;span class="o">=&lt;/span>info &lt;span class="nv">msg&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;Default bridge (docker0) is assigned with an IP address 172.17.0.0/16. Daemon option --bip can be used to set a p&amp;gt;
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="s2">Sep 26 11:34:48 ball starthost.sh[3669]: time=&amp;#34;&lt;/span>2024-09-26T11:34:48.587288757Z&lt;span class="s2">&amp;#34; level=info msg=&amp;#34;&lt;/span>Loading containers: &lt;span class="k">done&lt;/span>.&lt;span class="s2">&amp;#34;
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="s2">Sep 26 11:34:48 ball starthost.sh[3669]: time=&amp;#34;&lt;/span>2024-09-26T11:34:48.636215542Z&lt;span class="s2">&amp;#34; level=warning msg=&amp;#34;&lt;/span>WARNING: No swap limit support&lt;span class="s2">&amp;#34;
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="s2">Sep 26 11:34:48 ball starthost.sh[3669]: time=&amp;#34;&lt;/span>2024-09-26T11:34:48.636374541Z&lt;span class="s2">&amp;#34; level=info msg=&amp;#34;&lt;/span>Docker daemon&lt;span class="s2">&amp;#34; commit=662f78c0b1bb5114172427cfcb40491d73159be2 containerd-snapshotter=false storage-driver=overla&amp;gt;
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="s2">Sep 26 11:34:48 ball starthost.sh[3669]: time=&amp;#34;&lt;/span>2024-09-26T11:34:48.636459341Z&lt;span class="s2">&amp;#34; level=info msg=&amp;#34;&lt;/span>Daemon has completed initialization&lt;span class="s2">&amp;#34;
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="s2">Sep 26 11:34:48 ball starthost.sh[3669]: time=&amp;#34;&lt;/span>2024-09-26T11:34:48.732063320Z&lt;span class="s2">&amp;#34; level=info msg=&amp;#34;&lt;/span>API listen on /var/run/docker.sock&lt;span class="s2">&amp;#34;
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>The solution was hinted at by &lt;a class="link" href="https://forums.autodesk.com/t5/eagle-forum/eagle-9-2-error-when-running-on-debian-buster-linux-x64/m-p/8357440/highlight/true#M17666" target="_blank" rel="noopener"
+>this Autodesk community&lt;/a> post (similar &lt;a class="link" href="https://gitlab.com/pdfgrep/pdfgrep/-/issues/32" target="_blank" rel="noopener"
+>post&lt;/a> for more context).&lt;/p>
+&lt;p>Basically I had to reconfigure my OS&amp;rsquo;s locales to include &lt;code>en_US.UTF-8&lt;/code>&lt;/p>
+&lt;p>This makes at least some sense for me; since I always choose &amp;ldquo;UK Macintosh&amp;rdquo; or the equivalently named keyboard layout, the locale is then also set for the UK i.e. &lt;code>en_GB.UTF-8&lt;/code>.&lt;/p>
+&lt;p>If you also need to do this, just run &lt;code>dpkg-reconfigure locales&lt;/code>, selecting the &lt;code>en_US.UTF-8&lt;/code> locale. I also set is as the default locale, just to be sure, but I don&amp;rsquo;t think that was required; it is probably enough that it&amp;rsquo;s just available locally.&lt;/p>
+&lt;p>After that, it starts up just fine&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;span class="lnt">19
+&lt;/span>&lt;span class="lnt">20
+&lt;/span>&lt;span class="lnt">21
+&lt;/span>&lt;span class="lnt">22
+&lt;/span>&lt;span class="lnt">23
+&lt;/span>&lt;span class="lnt">24
+&lt;/span>&lt;span class="lnt">25
+&lt;/span>&lt;span class="lnt">26
+&lt;/span>&lt;span class="lnt">27
+&lt;/span>&lt;span class="lnt">28
+&lt;/span>&lt;span class="lnt">29
+&lt;/span>&lt;span class="lnt">30
+&lt;/span>&lt;span class="lnt">31
+&lt;/span>&lt;span class="lnt">32
+&lt;/span>&lt;span class="lnt">33
+&lt;/span>&lt;span class="lnt">34
+&lt;/span>&lt;span class="lnt">35
+&lt;/span>&lt;span class="lnt">36
+&lt;/span>&lt;span class="lnt">37
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">root@ball:/home/ross# systemctl status servicefabric
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">● servicefabric.service - ServiceFabric Daemon
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> Loaded: loaded &lt;span class="o">(&lt;/span>/etc/systemd/system/servicefabric.service&lt;span class="p">;&lt;/span> enabled&lt;span class="p">;&lt;/span> vendor preset: enabled&lt;span class="o">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> Active: active &lt;span class="o">(&lt;/span>running&lt;span class="o">)&lt;/span> since Thu 2024-09-26 11:39:20 UTC&lt;span class="p">;&lt;/span> 6min ago
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> Main PID: &lt;span class="m">5414&lt;/span> &lt;span class="o">(&lt;/span>starthost.sh&lt;span class="o">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> Tasks: &lt;span class="m">543&lt;/span> &lt;span class="o">(&lt;/span>limit: 3410&lt;span class="o">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> Memory: 4.9G
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> CGroup: /system.slice/servicefabric.service
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> ├─ &lt;span class="m">5414&lt;/span> /bin/bash /opt/microsoft/servicefabric/bin/starthost.sh
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> ├─ &lt;span class="m">5525&lt;/span> /opt/microsoft/servicefabric/bin/FabricHost -c -skipfabricsetup
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> ├─ &lt;span class="m">5578&lt;/span> /usr/bin/dockerd -H unix:///var/run/docker.sock --pidfile /home/sfuser/sfdevcluster/data/_sf_docker_pid/133718243624413540_sfdocker.pid
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> ├─ &lt;span class="m">5622&lt;/span> dotnet FabricCAS.dll
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> ├─ &lt;span class="m">5623&lt;/span> dotnet FabricDCA.dll
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> ├─ &lt;span class="m">5653&lt;/span> /opt/microsoft/servicefabric/bin/Fabric/Fabric.Code/Fabric
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> ├─ &lt;span class="m">5673&lt;/span> /opt/microsoft/servicefabric/bin/Fabric/Fabric.Code/Fabric
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> ├─ &lt;span class="m">5697&lt;/span> /opt/microsoft/servicefabric/bin/Fabric/Fabric.Code/Fabric
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> ├─ &lt;span class="m">5728&lt;/span> /opt/microsoft/servicefabric/bin/Fabric/Fabric.Code/Fabric
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> ├─ &lt;span class="m">5731&lt;/span> /opt/microsoft/servicefabric/bin/Fabric/Fabric.Code/Fabric
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> ├─ &lt;span class="m">6354&lt;/span> /opt/microsoft/servicefabric/bin/Fabric/Fabric.Code/FabricGateway.exe localhost:35653
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> ├─ &lt;span class="m">7198&lt;/span> /opt/microsoft/servicefabric/bin/Fabric/Fabric.Code/FabricGateway.exe localhost:41695
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> ├─ &lt;span class="m">7233&lt;/span> /opt/microsoft/servicefabric/bin/Fabric/Fabric.Code/FabricGateway.exe localhost:38963
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> ├─ &lt;span class="m">7294&lt;/span> /opt/microsoft/servicefabric/bin/Fabric/Fabric.Code/FabricGateway.exe localhost:45225
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> ├─ &lt;span class="m">7355&lt;/span> /opt/microsoft/servicefabric/bin/Fabric/Fabric.Code/FabricGateway.exe localhost:43547
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> ├─22137 /home/sfuser/sfdevcluster/data/_App/_Node_3/__FabricSystem_App4294967295/FileStoreService.Code.Current/FileStoreService.exe
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> ├─23576 /home/sfuser/sfdevcluster/data/_App/_Node_0/__FabricSystem_App4294967295/FileStoreService.Code.Current/FileStoreService.exe
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> └─24888 /home/sfuser/sfdevcluster/data/_App/_Node_2/__FabricSystem_App4294967295/FileStoreService.Code.Current/FileStoreService.exe
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Sep &lt;span class="m">26&lt;/span> 11:39:27 ball starthost.sh&lt;span class="o">[&lt;/span>7294&lt;span class="o">]&lt;/span>: Start or Close server operation succeeded!
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Sep &lt;span class="m">26&lt;/span> 11:39:27 ball starthost.sh&lt;span class="o">[&lt;/span>7294&lt;span class="o">]&lt;/span>: Fabric Gateway started.
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Sep &lt;span class="m">26&lt;/span> 11:39:27 ball starthost.sh&lt;span class="o">[&lt;/span>7355&lt;span class="o">]&lt;/span>: Starting Fabric Gateway.
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Sep &lt;span class="m">26&lt;/span> 11:39:27 ball starthost.sh&lt;span class="o">[&lt;/span>7355&lt;span class="o">]&lt;/span>: Start or Close server operation succeeded!
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Sep &lt;span class="m">26&lt;/span> 11:39:27 ball starthost.sh&lt;span class="o">[&lt;/span>7355&lt;span class="o">]&lt;/span>: Fabric Gateway started.
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Sep &lt;span class="m">26&lt;/span> 11:39:27 ball starthost.sh&lt;span class="o">[&lt;/span>7198&lt;span class="o">]&lt;/span>: Start or Close server operation succeeded!
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Sep &lt;span class="m">26&lt;/span> 11:39:27 ball starthost.sh&lt;span class="o">[&lt;/span>7198&lt;span class="o">]&lt;/span>: Fabric Gateway started.
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Sep &lt;span class="m">26&lt;/span> 11:40:01 ball starthost.sh&lt;span class="o">[&lt;/span>5697&lt;span class="o">]&lt;/span>: Failover Manager is ready.
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Sep &lt;span class="m">26&lt;/span> 11:40:36 ball usermod&lt;span class="o">[&lt;/span>22093&lt;span class="o">]&lt;/span>: add &lt;span class="s1">&amp;#39;root&amp;#39;&lt;/span> to group &lt;span class="s1">&amp;#39;ServiceFabricAllowedUsers&amp;#39;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Sep &lt;span class="m">26&lt;/span> 11:40:36 ball usermod&lt;span class="o">[&lt;/span>22093&lt;span class="o">]&lt;/span>: add &lt;span class="s1">&amp;#39;root&amp;#39;&lt;/span> to shadow group &lt;span class="s1">&amp;#39;ServiceFabricAllowedUsers&amp;#39;&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h2 id="conclusion">Conclusion
+&lt;/h2>&lt;p>So there you go; two gotchas to bear in mind when creating a Linux Service Fabric cluster.&lt;/p>
+&lt;p>Happy hacking!&lt;/p></description></item></channel></rss>

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Supermemo on Ross' Most Humble Weblog</title><link>https://wilsn.cc/tags/supermemo/</link><description>Recent content in Supermemo on Ross' Most Humble Weblog</description><generator>Hugo -- gohugo.io</generator><language>en-gb</language><lastBuildDate>Thu, 17 Oct 2024 09:59:00 +0200</lastBuildDate><atom:link href="https://wilsn.cc/tags/supermemo/index.xml" rel="self" type="application/rss+xml"/><item><title>On SuperMemo</title><link>https://wilsn.cc/2024/10/on-supermemo/</link><pubDate>Thu, 17 Oct 2024 09:59:00 +0200</pubDate><guid>https://wilsn.cc/2024/10/on-supermemo/</guid><description>&lt;p>&lt;strong>tl;dr&lt;/strong>: save your money, use Anki w/ FSRS.&lt;/p>
+&lt;p>I have a need to be learning; it&amp;rsquo;s almost a compulsion. It doesn&amp;rsquo;t always have to be something immediately useful or relevant to my personal life or my career. If it&amp;rsquo;s mildly interesting, it will do.&lt;/p>
+&lt;p>But for the things I &lt;em>do&lt;/em> want to put to use, for the things I want to &lt;em>remember&lt;/em>, I know there are tools out there to help make it possible in the most efficient way discovered so far; spaced repetition.&lt;/p>
+&lt;p>If you know what spaced repetition is, you probably know about Anki. It&amp;rsquo;s the canonical spaced repetition software, although there are others e.g. Mnemosyne. However, there is another piece of software which has ostensibly more claim to the title of most significant spaced repetition software; SuperMemo.&lt;/p>
+&lt;h2 id="supermemo">SuperMemo
+&lt;/h2>&lt;p>For an answer to the question &amp;ldquo;what is SuperMemo&amp;rdquo;, the &lt;a class="link" href="https://help.supermemo.org/wiki/SuperMemo" target="_blank" rel="noopener"
+>SuperMemo wiki&lt;/a> explains it best. Quoting:&lt;/p>
+&lt;blockquote>
+&lt;p>The three most important facts about SuperMemo&lt;/p>
+&lt;ul>
+&lt;li>SuperMemo is a learning method that makes it possible to learn &amp;gt; fast and retain memories for years&lt;/li>
+&lt;li>SuperMemo is available as an easy computer program for Windows, Android, iOS, web browser, and more&lt;/li>
+&lt;li>SuperMemo is based on the science of long-term memory&lt;/li>
+&lt;/ul>
+&lt;/blockquote>
+&lt;p>The first point seems to be supported by the enough happy users.&lt;/p>
+&lt;p>The second point is somewhat misleading; the original SuperMemo software is only available on Windows desktop PCs; there is also &lt;a class="link" href="https://supermemo.com" target="_blank" rel="noopener"
+>SuperMemo.com&lt;/a> but that&amp;rsquo;s basically language learning SaaS. It does not provide anything like what SuperMemo provides on Windows.&lt;/p>
+&lt;p>The third point is the most interesting. The company behind SuperMemo includes published researchers who have studied human memory such that they have build a model of how we remember (and forget), and then implemented that into their &lt;a class="link" href="https://super-memory.com/english/el.htm" target="_blank" rel="noopener"
+>SuperMemo algorithm&lt;/a>.&lt;/p>
+&lt;p>Considering that Anki&amp;rsquo;s algorithm is based on the SuperMemo&amp;rsquo;s SM2 algorithm, the importance and relevance of SuperMemo and their work become apparent. But SM2 was created and published to the world in &lt;a class="link" href="https://super-memory.com/english/ol.htm" target="_blank" rel="noopener"
+>1990&lt;/a>; 34 years hence, a lot has changed in the world.&lt;/p>
+&lt;p>What, then, has an extra three decades brought to the first and leading computerised spaced repetition system&amp;rsquo;s user experience and algorithm?&lt;/p>
+&lt;h2 id="my-experience">My experience
+&lt;/h2>&lt;p>This year I built a Windows PC for gaming. It has been a long time since I have had a Windows machine, so only recently have I had the chance to experiment with SuperMemo.&lt;/p>
+&lt;p>Now, having done so for the past few weeks, I can summarise my experience in one word: &lt;strong>disappointing&lt;/strong>.&lt;/p>
+&lt;h3 id="user-interface">User Interface
+&lt;/h3>&lt;p>SuperMemo 19 is a Delphi app which has been dragged, kicking and screaming, from the 90s through to today. And it really shows.&lt;/p>
+&lt;p>The UI has different &amp;rsquo;levels':&lt;/p>
+&lt;ul>
+&lt;li>Beginner&lt;/li>
+&lt;li>Basic&lt;/li>
+&lt;li>Middle&lt;/li>
+&lt;li>Professional
+&lt;ul>
+&lt;li>This level has an optional &amp;lsquo;Warrior Layout&amp;rsquo;&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;p>Already your alarm bells should be ringing.&lt;/p>
+&lt;p>The lower levels hide much of the basic functionality you would want. The middle levels reveal some of that functionality. The higher levels use the rather horrible &lt;a class="link" href="https://en.wikipedia.org/wiki/Multiple-document_interface" target="_blank" rel="noopener"
+>Multiple-document interface&lt;/a> pattern, making usage across multiple monitors very painful or impossible.&lt;/p>
+&lt;h3 id="adding-or-editing-content">Adding or Editing Content
+&lt;/h3>&lt;p>The &amp;rsquo;element editor&amp;rsquo; is painful. Setting consistent theming for the content you want to add is unnecessary complex and rather esoteric. It&amp;rsquo;s not that it&amp;rsquo;s crucial for learning content to be replete with fancy fonts and effects; but learning &lt;em>should&lt;/em> be enjoyable. Enjoyment contributes positively to the capacity to learn and remember.&lt;/p>
+&lt;p>Why then should you have to run a gauntlet of fire to theme your rich text with an alternative background colour and font colour? To that, I can find no acceptable answer.&lt;/p>
+&lt;h3 id="the-supermemo-algorithm-and-fsrs">The SuperMemo Algorithm and FSRS
+&lt;/h3>&lt;p>Above all else, what SuperMemo has is the proprietary algorithm. Some of SuperMemo&amp;rsquo;s proponents make no secret of the fact that they see past all of SuperMemo&amp;rsquo;s flaws, just to be able to use the algorithm.&lt;/p>
+&lt;p>In my (limited) experience, the algorithm does not perform significantly better than Anki does, especially with the new FSRS algorithm.&lt;/p>
+&lt;p>And even if it did, the rest of the application makes &amp;rsquo;learning&amp;rsquo; a torturous process.&lt;/p>
+&lt;p>At the same time, other researchers have shared their work in developing their own novel spaced-repetition algorithms, attempting too to model the human memory. The most well known of these being &lt;a class="link" href="https://github.com/open-spaced-repetition/fsrs4anki/wiki/The-Algorithm" target="_blank" rel="noopener"
+>FSRS&lt;/a>, though Maimemo&amp;rsquo;s &lt;a class="link" href="https://github.com/maimemo/SSP-MMC-Plus" target="_blank" rel="noopener"
+>SSP-MMC&lt;/a> is also publicly available.&lt;/p>
+&lt;h2 id="the-future-of-supermemo">The Future of SuperMemo
+&lt;/h2>&lt;p>SuperMemo seems to be the (pet) project of one main character, Piotr A. Wozniak, author of the research papers linked above.&lt;/p>
+&lt;p>In recent discussions, Mr. Wozniak has made clear that he quite likes his Windows desktop-oriented workflow, and does not see a need for this to change.&lt;/p>
+&lt;p>Both he and SuperMemo World, the company behind SuperMemo, have no plans to open source the algorithm they have historically claimed to be far more advanced and superior to the others in the market.&lt;/p>
+&lt;p>Considering the above, SuperMemo World appear to have a real &amp;lsquo;bus problem&amp;rsquo;. If the algorithm is as good as is claimed, it seems a real tragedy that there is no intention to share it with the world, to allow a more usable, more likeable software package to spread the apparent miracle of the SuperMemo algorithm with the world.&lt;/p>
+&lt;p>In short, the future of SuperMemo and its algorithm does not seem particularly bright.&lt;/p>
+&lt;h2 id="conclusion">Conclusion
+&lt;/h2>&lt;p>Many people love Anki; many hate it. A far smaller number of people love SuperMemo; I would suppose, even fewer people (proportionally) hate SuperMemo.&lt;/p>
+&lt;p>It is a piece of software with a real cult following; I mean that in a sincere way, like cult movies, and not like Aum Shinrikyo. Said cult revolves around both SuperMemo and Mr. Wozniak. Since the former is the decades long brainchild of the latter, and it embodies his own personal and professional opinions about what works and what doesn&amp;rsquo;t, the two are linked in a very interesting way that goes beyond simply a piece of software and its (sole?) developer. A unique form of symbiosis which I have never seen before.&lt;/p>
+&lt;p>To really buy into SuperMemo, you have to buy into the cult. That&amp;rsquo;s a hard sell when even some of the most vocal advocates for SuperMemo online are finding that the time has come to &lt;a class="link" href="https://www.masterhowtolearn.com/2022-08-05-why-i-switched-to-obsidian-after-using-supermemo-for-4-years/" target="_blank" rel="noopener"
+>let go&lt;/a>, and to &lt;a class="link" href="https://www.youtube.com/watch?v=Fbc2iWCuSRI" target="_blank" rel="noopener"
+>move on&lt;/a>.&lt;/p>
+&lt;p>Considering all of the above, it would be a hard sell were it free of charge. At &lt;a class="link" href="https://supermemo.store/products/supermemo-19-for-windows" target="_blank" rel="noopener"
+>$70.00 USD&lt;/a>, the writing is on the wall.&lt;/p></description></item></channel></rss>

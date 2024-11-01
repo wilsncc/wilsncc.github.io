@@ -1,0 +1,694 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Ross' Most Humble Weblog</title><link>https://wilsn.cc/</link><description>Recent content on Ross' Most Humble Weblog</description><generator>Hugo -- gohugo.io</generator><language>en-gb</language><lastBuildDate>Thu, 17 Oct 2024 09:59:00 +0200</lastBuildDate><atom:link href="https://wilsn.cc/index.xml" rel="self" type="application/rss+xml"/><item><title>Setting up a Linux Service Fabric cluster in 2024</title><link>https://wilsn.cc/2024/09/linux-service-fabric-cluster/</link><pubDate>Sat, 28 Sep 2024 20:44:00 +0200</pubDate><guid>https://wilsn.cc/2024/09/linux-service-fabric-cluster/</guid><description>&lt;img src="https://wilsn.cc/2024/09/linux-service-fabric-cluster/sf-logo.png" alt="Featured image of post Setting up a Linux Service Fabric cluster in 2024" />&lt;p>&lt;strong>tl;dr&lt;/strong>: follow the &lt;a class="link" href="https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-get-started-linux?tabs=sdksetupubuntu%2Clocalclusteroneboxcontainer#manual-installation" target="_blank" rel="noopener"
+>Manual installation&lt;/a> steps and ensure that you have &lt;code>en_US.UTF-8&lt;/code> locale installed (&lt;code>dpkg-reconfigure locales&lt;/code>)&lt;/p>
+&lt;hr>
+&lt;p>Since I working briefly at a Dutch-Brazilian start-up that ran Service Fabric in production, I have always been curious about it. My first job thereafter was as a platform engineer, specifically focussed on Azure Kubernetes Service; Service Fabric and Kubernetes are often seen as similar, or at lest somewhat comparable.&lt;/p>
+&lt;p>I have tried a few times since leaving said start-up to setup a Service Fabric cluster myself. Using the managed Azure service works as expected, but is obviously not free. Creating a self-hosted Windows cluster is pretty straightforward; there&amp;rsquo;s an installer and a special tool that runs in the tray which lets you create or destroy a local 1-node or 5-node cluster with just a click&lt;/p>
+&lt;p>But creating a self-hosted Linux cluster proved to be more challenging.&lt;/p>
+&lt;h2 id="the-microsoft-documentation">The Microsoft documentation
+&lt;/h2>&lt;p>My main issue here is that the documentation is not up to date.&lt;/p>
+&lt;p>There is of course a page on Microsoft Learn which instructs you in how to setup a Service Fabric cluster on Linux, and if you look at the &lt;a class="link" href="https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-get-started-linux?tabs=sdksetupubuntu%2Clocalclusteroneboxcontainer#script-installation" target="_blank" rel="noopener"
+>Script installation&lt;/a> section, you will find a &lt;a class="link" href="https://raw.githubusercontent.com/Azure/service-fabric-scripts-and-templates/master/scripts/SetupServiceFabric/SetupServiceFabric.sh" target="_blank" rel="noopener"
+>link to a script hosted on GitHub&lt;/a>.&lt;/p>
+&lt;p>Said script contains the following code:&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;span class="lnt">5
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">&lt;span class="line">&lt;span class="cl">Distribution=`lsb_release -cs`
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">if [%[ &amp;#34;xenial&amp;#34; != &amp;#34;$Distribution&amp;#34; &amp;amp;&amp;amp; &amp;#34;bionic&amp;#34; != &amp;#34;$Distribution&amp;#34; ]]; then
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> echo &amp;#34;Service Fabric is not supported on $Distribution&amp;#34;
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> exit -1
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">fi
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>This code causes the script to fail with an error if the version of Ubuntu you are running (did I mention you must only use Ubuntu?) is neither &lt;em>Xenial Xerus&lt;/em> (16.04) nor &lt;em>Bionic Beaver&lt;/em> (18.04). Whilst both being Long-Term Support releases, at the time of writing, both versions are into their final lifecycle phase i.e. &lt;em>extended security maintenance&lt;/em> i.e. critical patches only.&lt;/p>
+&lt;p>This is not what you want for a &lt;em>new&lt;/em> production system. Funnily enough, it&amp;rsquo;s also not what Microsoft deliver with their Azure Service Fabric product! Anyway, we know from the Service Fabric release notes that later versions of Ubuntu are supported; versions which are still in the standard support phase. For example, the &lt;a class="link" href="https://github.com/microsoft/service-fabric/blob/master/release_notes/Service_Fabric_ReleaseNotes_101CU4.md" target="_blank" rel="noopener"
+>release notes for Service Fabric 10.1 CU 4&lt;/a> show that the &amp;lsquo;Service Fabric Runtime&amp;rsquo; package supports only &amp;lsquo;Ubuntu 20&amp;rsquo; and &amp;lsquo;Windows&amp;rsquo;. So, we must surely be able to use Ubuntu 20!&lt;/p>
+&lt;p>Well, we can. And it&amp;rsquo;s as simple as following the steps listed in &lt;a class="link" href="https://learn.microsoft.com/en-us/azure/service-fabric/service-fabric-get-started-linux?tabs=sdksetupubuntu%2Clocalclusteroneboxcontainer#manual-installation" target="_blank" rel="noopener"
+>Manual installation&lt;/a> instead. This worked for me with an Ubuntu 20.04 VM.&lt;/p>
+&lt;h2 id="locale-issue">Locale issue
+&lt;/h2>&lt;p>Installation instructions were not the only option. It appears that your OS &lt;em>must&lt;/em> be configured with the correct locale i.e. &lt;code>en_US.UTF-8&lt;/code>.&lt;/p>
+&lt;p>In my case, &lt;code>servicefabric.service&lt;/code> would not start&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;span class="lnt">19
+&lt;/span>&lt;span class="lnt">20
+&lt;/span>&lt;span class="lnt">21
+&lt;/span>&lt;span class="lnt">22
+&lt;/span>&lt;span class="lnt">23
+&lt;/span>&lt;span class="lnt">24
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">root@ball:/home/ross# systemctl status servicefabric
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">● servicefabric.service - ServiceFabric Daemon
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> Loaded: loaded &lt;span class="o">(&lt;/span>/etc/systemd/system/servicefabric.service&lt;span class="p">;&lt;/span> enabled&lt;span class="p">;&lt;/span> vendor preset: enabled&lt;span class="o">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> Active: active &lt;span class="o">(&lt;/span>running&lt;span class="o">)&lt;/span> since Thu 2024-09-26 11:34:45 UTC&lt;span class="p">;&lt;/span> 6s ago
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> Main PID: &lt;span class="m">3504&lt;/span> &lt;span class="o">(&lt;/span>starthost.sh&lt;span class="o">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> Tasks: &lt;span class="m">112&lt;/span> &lt;span class="o">(&lt;/span>limit: 3410&lt;span class="o">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> Memory: 237.1M
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> CGroup: /system.slice/servicefabric.service
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> ├─3504 /bin/bash /opt/microsoft/servicefabric/bin/starthost.sh
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> ├─3616 /opt/microsoft/servicefabric/bin/FabricHost -c -skipfabricsetup
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> ├─3669 /usr/bin/dockerd -H unix:///var/run/docker.sock --pidfile /home/sfuser/sfdevcluster/data/_sf_docker_pid/133718240874061580_sfdocker.pid
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> ├─3697 dotnet FabricCAS.dll
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> └─3698 dotnet FabricDCA.dll
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Sep &lt;span class="m">26&lt;/span> 11:34:47 ball starthost.sh&lt;span class="o">[&lt;/span>3757&lt;span class="o">]&lt;/span>: terminating with uncaught exception of &lt;span class="nb">type&lt;/span> std::runtime_error: collate_byname&amp;lt;char&amp;gt;::collate_byname failed to construct &lt;span class="k">for&lt;/span> en_US.UTF-8
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Sep &lt;span class="m">26&lt;/span> 11:34:47 ball starthost.sh&lt;span class="o">[&lt;/span>3774&lt;span class="o">]&lt;/span>: terminating with uncaught exception of &lt;span class="nb">type&lt;/span> std::runtime_error: collate_byname&amp;lt;char&amp;gt;::collate_byname failed to construct &lt;span class="k">for&lt;/span> en_US.UTF-8
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Sep &lt;span class="m">26&lt;/span> 11:34:47 ball starthost.sh&lt;span class="o">[&lt;/span>3808&lt;span class="o">]&lt;/span>: terminating with uncaught exception of &lt;span class="nb">type&lt;/span> std::runtime_error: collate_byname&amp;lt;char&amp;gt;::collate_byname failed to construct &lt;span class="k">for&lt;/span> en_US.UTF-8
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Sep &lt;span class="m">26&lt;/span> 11:34:47 ball starthost.sh&lt;span class="o">[&lt;/span>3807&lt;span class="o">]&lt;/span>: terminating with uncaught exception of &lt;span class="nb">type&lt;/span> std::runtime_error: collate_byname&amp;lt;char&amp;gt;::collate_byname failed to construct &lt;span class="k">for&lt;/span> en_US.UTF-8
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Sep &lt;span class="m">26&lt;/span> 11:34:48 ball starthost.sh&lt;span class="o">[&lt;/span>3669&lt;span class="o">]&lt;/span>: &lt;span class="nv">time&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;2024-09-26T11:34:48.200147262Z&amp;#34;&lt;/span> &lt;span class="nv">level&lt;/span>&lt;span class="o">=&lt;/span>info &lt;span class="nv">msg&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;Default bridge (docker0) is assigned with an IP address 172.17.0.0/16. Daemon option --bip can be used to set a p&amp;gt;
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="s2">Sep 26 11:34:48 ball starthost.sh[3669]: time=&amp;#34;&lt;/span>2024-09-26T11:34:48.587288757Z&lt;span class="s2">&amp;#34; level=info msg=&amp;#34;&lt;/span>Loading containers: &lt;span class="k">done&lt;/span>.&lt;span class="s2">&amp;#34;
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="s2">Sep 26 11:34:48 ball starthost.sh[3669]: time=&amp;#34;&lt;/span>2024-09-26T11:34:48.636215542Z&lt;span class="s2">&amp;#34; level=warning msg=&amp;#34;&lt;/span>WARNING: No swap limit support&lt;span class="s2">&amp;#34;
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="s2">Sep 26 11:34:48 ball starthost.sh[3669]: time=&amp;#34;&lt;/span>2024-09-26T11:34:48.636374541Z&lt;span class="s2">&amp;#34; level=info msg=&amp;#34;&lt;/span>Docker daemon&lt;span class="s2">&amp;#34; commit=662f78c0b1bb5114172427cfcb40491d73159be2 containerd-snapshotter=false storage-driver=overla&amp;gt;
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="s2">Sep 26 11:34:48 ball starthost.sh[3669]: time=&amp;#34;&lt;/span>2024-09-26T11:34:48.636459341Z&lt;span class="s2">&amp;#34; level=info msg=&amp;#34;&lt;/span>Daemon has completed initialization&lt;span class="s2">&amp;#34;
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="s2">Sep 26 11:34:48 ball starthost.sh[3669]: time=&amp;#34;&lt;/span>2024-09-26T11:34:48.732063320Z&lt;span class="s2">&amp;#34; level=info msg=&amp;#34;&lt;/span>API listen on /var/run/docker.sock&lt;span class="s2">&amp;#34;
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>The solution was hinted at by &lt;a class="link" href="https://forums.autodesk.com/t5/eagle-forum/eagle-9-2-error-when-running-on-debian-buster-linux-x64/m-p/8357440/highlight/true#M17666" target="_blank" rel="noopener"
+>this Autodesk community&lt;/a> post (similar &lt;a class="link" href="https://gitlab.com/pdfgrep/pdfgrep/-/issues/32" target="_blank" rel="noopener"
+>post&lt;/a> for more context).&lt;/p>
+&lt;p>Basically I had to reconfigure my OS&amp;rsquo;s locales to include &lt;code>en_US.UTF-8&lt;/code>&lt;/p>
+&lt;p>This makes at least some sense for me; since I always choose &amp;ldquo;UK Macintosh&amp;rdquo; or the equivalently named keyboard layout, the locale is then also set for the UK i.e. &lt;code>en_GB.UTF-8&lt;/code>.&lt;/p>
+&lt;p>If you also need to do this, just run &lt;code>dpkg-reconfigure locales&lt;/code>, selecting the &lt;code>en_US.UTF-8&lt;/code> locale. I also set is as the default locale, just to be sure, but I don&amp;rsquo;t think that was required; it is probably enough that it&amp;rsquo;s just available locally.&lt;/p>
+&lt;p>After that, it starts up just fine&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;span class="lnt">19
+&lt;/span>&lt;span class="lnt">20
+&lt;/span>&lt;span class="lnt">21
+&lt;/span>&lt;span class="lnt">22
+&lt;/span>&lt;span class="lnt">23
+&lt;/span>&lt;span class="lnt">24
+&lt;/span>&lt;span class="lnt">25
+&lt;/span>&lt;span class="lnt">26
+&lt;/span>&lt;span class="lnt">27
+&lt;/span>&lt;span class="lnt">28
+&lt;/span>&lt;span class="lnt">29
+&lt;/span>&lt;span class="lnt">30
+&lt;/span>&lt;span class="lnt">31
+&lt;/span>&lt;span class="lnt">32
+&lt;/span>&lt;span class="lnt">33
+&lt;/span>&lt;span class="lnt">34
+&lt;/span>&lt;span class="lnt">35
+&lt;/span>&lt;span class="lnt">36
+&lt;/span>&lt;span class="lnt">37
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">root@ball:/home/ross# systemctl status servicefabric
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">● servicefabric.service - ServiceFabric Daemon
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> Loaded: loaded &lt;span class="o">(&lt;/span>/etc/systemd/system/servicefabric.service&lt;span class="p">;&lt;/span> enabled&lt;span class="p">;&lt;/span> vendor preset: enabled&lt;span class="o">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> Active: active &lt;span class="o">(&lt;/span>running&lt;span class="o">)&lt;/span> since Thu 2024-09-26 11:39:20 UTC&lt;span class="p">;&lt;/span> 6min ago
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> Main PID: &lt;span class="m">5414&lt;/span> &lt;span class="o">(&lt;/span>starthost.sh&lt;span class="o">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> Tasks: &lt;span class="m">543&lt;/span> &lt;span class="o">(&lt;/span>limit: 3410&lt;span class="o">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> Memory: 4.9G
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> CGroup: /system.slice/servicefabric.service
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> ├─ &lt;span class="m">5414&lt;/span> /bin/bash /opt/microsoft/servicefabric/bin/starthost.sh
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> ├─ &lt;span class="m">5525&lt;/span> /opt/microsoft/servicefabric/bin/FabricHost -c -skipfabricsetup
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> ├─ &lt;span class="m">5578&lt;/span> /usr/bin/dockerd -H unix:///var/run/docker.sock --pidfile /home/sfuser/sfdevcluster/data/_sf_docker_pid/133718243624413540_sfdocker.pid
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> ├─ &lt;span class="m">5622&lt;/span> dotnet FabricCAS.dll
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> ├─ &lt;span class="m">5623&lt;/span> dotnet FabricDCA.dll
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> ├─ &lt;span class="m">5653&lt;/span> /opt/microsoft/servicefabric/bin/Fabric/Fabric.Code/Fabric
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> ├─ &lt;span class="m">5673&lt;/span> /opt/microsoft/servicefabric/bin/Fabric/Fabric.Code/Fabric
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> ├─ &lt;span class="m">5697&lt;/span> /opt/microsoft/servicefabric/bin/Fabric/Fabric.Code/Fabric
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> ├─ &lt;span class="m">5728&lt;/span> /opt/microsoft/servicefabric/bin/Fabric/Fabric.Code/Fabric
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> ├─ &lt;span class="m">5731&lt;/span> /opt/microsoft/servicefabric/bin/Fabric/Fabric.Code/Fabric
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> ├─ &lt;span class="m">6354&lt;/span> /opt/microsoft/servicefabric/bin/Fabric/Fabric.Code/FabricGateway.exe localhost:35653
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> ├─ &lt;span class="m">7198&lt;/span> /opt/microsoft/servicefabric/bin/Fabric/Fabric.Code/FabricGateway.exe localhost:41695
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> ├─ &lt;span class="m">7233&lt;/span> /opt/microsoft/servicefabric/bin/Fabric/Fabric.Code/FabricGateway.exe localhost:38963
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> ├─ &lt;span class="m">7294&lt;/span> /opt/microsoft/servicefabric/bin/Fabric/Fabric.Code/FabricGateway.exe localhost:45225
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> ├─ &lt;span class="m">7355&lt;/span> /opt/microsoft/servicefabric/bin/Fabric/Fabric.Code/FabricGateway.exe localhost:43547
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> ├─22137 /home/sfuser/sfdevcluster/data/_App/_Node_3/__FabricSystem_App4294967295/FileStoreService.Code.Current/FileStoreService.exe
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> ├─23576 /home/sfuser/sfdevcluster/data/_App/_Node_0/__FabricSystem_App4294967295/FileStoreService.Code.Current/FileStoreService.exe
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> └─24888 /home/sfuser/sfdevcluster/data/_App/_Node_2/__FabricSystem_App4294967295/FileStoreService.Code.Current/FileStoreService.exe
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Sep &lt;span class="m">26&lt;/span> 11:39:27 ball starthost.sh&lt;span class="o">[&lt;/span>7294&lt;span class="o">]&lt;/span>: Start or Close server operation succeeded!
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Sep &lt;span class="m">26&lt;/span> 11:39:27 ball starthost.sh&lt;span class="o">[&lt;/span>7294&lt;span class="o">]&lt;/span>: Fabric Gateway started.
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Sep &lt;span class="m">26&lt;/span> 11:39:27 ball starthost.sh&lt;span class="o">[&lt;/span>7355&lt;span class="o">]&lt;/span>: Starting Fabric Gateway.
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Sep &lt;span class="m">26&lt;/span> 11:39:27 ball starthost.sh&lt;span class="o">[&lt;/span>7355&lt;span class="o">]&lt;/span>: Start or Close server operation succeeded!
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Sep &lt;span class="m">26&lt;/span> 11:39:27 ball starthost.sh&lt;span class="o">[&lt;/span>7355&lt;span class="o">]&lt;/span>: Fabric Gateway started.
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Sep &lt;span class="m">26&lt;/span> 11:39:27 ball starthost.sh&lt;span class="o">[&lt;/span>7198&lt;span class="o">]&lt;/span>: Start or Close server operation succeeded!
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Sep &lt;span class="m">26&lt;/span> 11:39:27 ball starthost.sh&lt;span class="o">[&lt;/span>7198&lt;span class="o">]&lt;/span>: Fabric Gateway started.
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Sep &lt;span class="m">26&lt;/span> 11:40:01 ball starthost.sh&lt;span class="o">[&lt;/span>5697&lt;span class="o">]&lt;/span>: Failover Manager is ready.
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Sep &lt;span class="m">26&lt;/span> 11:40:36 ball usermod&lt;span class="o">[&lt;/span>22093&lt;span class="o">]&lt;/span>: add &lt;span class="s1">&amp;#39;root&amp;#39;&lt;/span> to group &lt;span class="s1">&amp;#39;ServiceFabricAllowedUsers&amp;#39;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Sep &lt;span class="m">26&lt;/span> 11:40:36 ball usermod&lt;span class="o">[&lt;/span>22093&lt;span class="o">]&lt;/span>: add &lt;span class="s1">&amp;#39;root&amp;#39;&lt;/span> to shadow group &lt;span class="s1">&amp;#39;ServiceFabricAllowedUsers&amp;#39;&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h2 id="conclusion">Conclusion
+&lt;/h2>&lt;p>So there you go; two gotchas to bear in mind when creating a Linux Service Fabric cluster.&lt;/p>
+&lt;p>Happy hacking!&lt;/p></description></item><item><title>On SuperMemo</title><link>https://wilsn.cc/2024/10/on-supermemo/</link><pubDate>Thu, 17 Oct 2024 09:59:00 +0200</pubDate><guid>https://wilsn.cc/2024/10/on-supermemo/</guid><description>&lt;p>&lt;strong>tl;dr&lt;/strong>: save your money, use Anki w/ FSRS.&lt;/p>
+&lt;p>I have a need to be learning; it&amp;rsquo;s almost a compulsion. It doesn&amp;rsquo;t always have to be something immediately useful or relevant to my personal life or my career. If it&amp;rsquo;s mildly interesting, it will do.&lt;/p>
+&lt;p>But for the things I &lt;em>do&lt;/em> want to put to use, for the things I want to &lt;em>remember&lt;/em>, I know there are tools out there to help make it possible in the most efficient way discovered so far; spaced repetition.&lt;/p>
+&lt;p>If you know what spaced repetition is, you probably know about Anki. It&amp;rsquo;s the canonical spaced repetition software, although there are others e.g. Mnemosyne. However, there is another piece of software which has ostensibly more claim to the title of most significant spaced repetition software; SuperMemo.&lt;/p>
+&lt;h2 id="supermemo">SuperMemo
+&lt;/h2>&lt;p>For an answer to the question &amp;ldquo;what is SuperMemo&amp;rdquo;, the &lt;a class="link" href="https://help.supermemo.org/wiki/SuperMemo" target="_blank" rel="noopener"
+>SuperMemo wiki&lt;/a> explains it best. Quoting:&lt;/p>
+&lt;blockquote>
+&lt;p>The three most important facts about SuperMemo&lt;/p>
+&lt;ul>
+&lt;li>SuperMemo is a learning method that makes it possible to learn &amp;gt; fast and retain memories for years&lt;/li>
+&lt;li>SuperMemo is available as an easy computer program for Windows, Android, iOS, web browser, and more&lt;/li>
+&lt;li>SuperMemo is based on the science of long-term memory&lt;/li>
+&lt;/ul>
+&lt;/blockquote>
+&lt;p>The first point seems to be supported by the enough happy users.&lt;/p>
+&lt;p>The second point is somewhat misleading; the original SuperMemo software is only available on Windows desktop PCs; there is also &lt;a class="link" href="https://supermemo.com" target="_blank" rel="noopener"
+>SuperMemo.com&lt;/a> but that&amp;rsquo;s basically language learning SaaS. It does not provide anything like what SuperMemo provides on Windows.&lt;/p>
+&lt;p>The third point is the most interesting. The company behind SuperMemo includes published researchers who have studied human memory such that they have build a model of how we remember (and forget), and then implemented that into their &lt;a class="link" href="https://super-memory.com/english/el.htm" target="_blank" rel="noopener"
+>SuperMemo algorithm&lt;/a>.&lt;/p>
+&lt;p>Considering that Anki&amp;rsquo;s algorithm is based on the SuperMemo&amp;rsquo;s SM2 algorithm, the importance and relevance of SuperMemo and their work become apparent. But SM2 was created and published to the world in &lt;a class="link" href="https://super-memory.com/english/ol.htm" target="_blank" rel="noopener"
+>1990&lt;/a>; 34 years hence, a lot has changed in the world.&lt;/p>
+&lt;p>What, then, has an extra three decades brought to the first and leading computerised spaced repetition system&amp;rsquo;s user experience and algorithm?&lt;/p>
+&lt;h2 id="my-experience">My experience
+&lt;/h2>&lt;p>This year I built a Windows PC for gaming. It has been a long time since I have had a Windows machine, so only recently have I had the chance to experiment with SuperMemo.&lt;/p>
+&lt;p>Now, having done so for the past few weeks, I can summarise my experience in one word: &lt;strong>disappointing&lt;/strong>.&lt;/p>
+&lt;h3 id="user-interface">User Interface
+&lt;/h3>&lt;p>SuperMemo 19 is a Delphi app which has been dragged, kicking and screaming, from the 90s through to today. And it really shows.&lt;/p>
+&lt;p>The UI has different &amp;rsquo;levels':&lt;/p>
+&lt;ul>
+&lt;li>Beginner&lt;/li>
+&lt;li>Basic&lt;/li>
+&lt;li>Middle&lt;/li>
+&lt;li>Professional
+&lt;ul>
+&lt;li>This level has an optional &amp;lsquo;Warrior Layout&amp;rsquo;&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;p>Already your alarm bells should be ringing.&lt;/p>
+&lt;p>The lower levels hide much of the basic functionality you would want. The middle levels reveal some of that functionality. The higher levels use the rather horrible &lt;a class="link" href="https://en.wikipedia.org/wiki/Multiple-document_interface" target="_blank" rel="noopener"
+>Multiple-document interface&lt;/a> pattern, making usage across multiple monitors very painful or impossible.&lt;/p>
+&lt;h3 id="adding-or-editing-content">Adding or Editing Content
+&lt;/h3>&lt;p>The &amp;rsquo;element editor&amp;rsquo; is painful. Setting consistent theming for the content you want to add is unnecessary complex and rather esoteric. It&amp;rsquo;s not that it&amp;rsquo;s crucial for learning content to be replete with fancy fonts and effects; but learning &lt;em>should&lt;/em> be enjoyable. Enjoyment contributes positively to the capacity to learn and remember.&lt;/p>
+&lt;p>Why then should you have to run a gauntlet of fire to theme your rich text with an alternative background colour and font colour? To that, I can find no acceptable answer.&lt;/p>
+&lt;h3 id="the-supermemo-algorithm-and-fsrs">The SuperMemo Algorithm and FSRS
+&lt;/h3>&lt;p>Above all else, what SuperMemo has is the proprietary algorithm. Some of SuperMemo&amp;rsquo;s proponents make no secret of the fact that they see past all of SuperMemo&amp;rsquo;s flaws, just to be able to use the algorithm.&lt;/p>
+&lt;p>In my (limited) experience, the algorithm does not perform significantly better than Anki does, especially with the new FSRS algorithm.&lt;/p>
+&lt;p>And even if it did, the rest of the application makes &amp;rsquo;learning&amp;rsquo; a torturous process.&lt;/p>
+&lt;p>At the same time, other researchers have shared their work in developing their own novel spaced-repetition algorithms, attempting too to model the human memory. The most well known of these being &lt;a class="link" href="https://github.com/open-spaced-repetition/fsrs4anki/wiki/The-Algorithm" target="_blank" rel="noopener"
+>FSRS&lt;/a>, though Maimemo&amp;rsquo;s &lt;a class="link" href="https://github.com/maimemo/SSP-MMC-Plus" target="_blank" rel="noopener"
+>SSP-MMC&lt;/a> is also publicly available.&lt;/p>
+&lt;h2 id="the-future-of-supermemo">The Future of SuperMemo
+&lt;/h2>&lt;p>SuperMemo seems to be the (pet) project of one main character, Piotr A. Wozniak, author of the research papers linked above.&lt;/p>
+&lt;p>In recent discussions, Mr. Wozniak has made clear that he quite likes his Windows desktop-oriented workflow, and does not see a need for this to change.&lt;/p>
+&lt;p>Both he and SuperMemo World, the company behind SuperMemo, have no plans to open source the algorithm they have historically claimed to be far more advanced and superior to the others in the market.&lt;/p>
+&lt;p>Considering the above, SuperMemo World appear to have a real &amp;lsquo;bus problem&amp;rsquo;. If the algorithm is as good as is claimed, it seems a real tragedy that there is no intention to share it with the world, to allow a more usable, more likeable software package to spread the apparent miracle of the SuperMemo algorithm with the world.&lt;/p>
+&lt;p>In short, the future of SuperMemo and its algorithm does not seem particularly bright.&lt;/p>
+&lt;h2 id="conclusion">Conclusion
+&lt;/h2>&lt;p>Many people love Anki; many hate it. A far smaller number of people love SuperMemo; I would suppose, even fewer people (proportionally) hate SuperMemo.&lt;/p>
+&lt;p>It is a piece of software with a real cult following; I mean that in a sincere way, like cult movies, and not like Aum Shinrikyo. Said cult revolves around both SuperMemo and Mr. Wozniak. Since the former is the decades long brainchild of the latter, and it embodies his own personal and professional opinions about what works and what doesn&amp;rsquo;t, the two are linked in a very interesting way that goes beyond simply a piece of software and its (sole?) developer. A unique form of symbiosis which I have never seen before.&lt;/p>
+&lt;p>To really buy into SuperMemo, you have to buy into the cult. That&amp;rsquo;s a hard sell when even some of the most vocal advocates for SuperMemo online are finding that the time has come to &lt;a class="link" href="https://www.masterhowtolearn.com/2022-08-05-why-i-switched-to-obsidian-after-using-supermemo-for-4-years/" target="_blank" rel="noopener"
+>let go&lt;/a>, and to &lt;a class="link" href="https://www.youtube.com/watch?v=Fbc2iWCuSRI" target="_blank" rel="noopener"
+>move on&lt;/a>.&lt;/p>
+&lt;p>Considering all of the above, it would be a hard sell were it free of charge. At &lt;a class="link" href="https://supermemo.store/products/supermemo-19-for-windows" target="_blank" rel="noopener"
+>$70.00 USD&lt;/a>, the writing is on the wall.&lt;/p></description></item><item><title>About</title><link>https://wilsn.cc/about/</link><pubDate>Sat, 28 Sep 2024 23:07:00 +0200</pubDate><guid>https://wilsn.cc/about/</guid><description>&lt;h1 id="about">About
+&lt;/h1>&lt;p>This is a weblog. At best it should be a public display of dialectic thinking; at worst it will likely be an incomprehensible mess.&lt;/p>
+&lt;p>Have fun!&lt;/p></description></item><item><title>Language tips for Intermediate</title><link>https://wilsn.cc/2024/02/language-tips-for-intermediate/</link><pubDate>Fri, 23 Feb 2024 21:10:00 +0200</pubDate><guid>https://wilsn.cc/2024/02/language-tips-for-intermediate/</guid><description>&lt;p>Recently I was asked for some resources for learning Dutch at an intermediate/advanced level. Rather than just list a bunch of textbooks and websites, I&amp;rsquo;ve written up some advice on how to actually do the language learning. Working smarter, not harder, etc.&lt;/p>
+&lt;p>Sorry if this was more than you were looking for.&lt;/p>
+&lt;h1 id="language-is-sounds">Language is sounds
+&lt;/h1>&lt;p>With the exception of sign languages, all languages are spoken. The words we read and write simply represent the sounds. We were speaking for many, many years before we ever invented writing systems.&lt;/p>
+&lt;p>Sadly, many people across the world are illiterate; it says something important that they can speak and listen, but cannot read or write. Research shows us that babies can hear and understand what we say long before they can speak, though we don&amp;rsquo;t need science to tell us that they can speak long before they start learning the alphabet.&lt;/p>
+&lt;p>If it’s not clear already, speaking and listening &lt;em>are&lt;/em> language, they are king and queen of communicating. Because language is sounds, and written words simply represent those sounds.&lt;/p>
+&lt;p>Perfecting how well you can understand what is spoken, and also the sounds that you speak, is &lt;em>key&lt;/em> to perfecting your language ability. Mistakes that you make already will become fossilised and more difficult to correct, the longer you make them.&lt;/p>
+&lt;h2 id="tip-1-deliberate-listening-practice">Tip 1: &lt;em>Deliberate&lt;/em> Listening Practice
+&lt;/h2>&lt;p>Find good quality audio from a speaker with a standard accent and listen to it deliberately. This is &lt;em>active listening&lt;/em>.&lt;/p>
+&lt;p>Listen to a large chunk of it (some 3 to 5 minutes) all the way through. Try to understand as much as you can. Listen to it again a few times.&lt;/p>
+&lt;p>Try and write down the words you don’t recognise. &lt;em>If your listening skills are good and you at least understand the writing system, you will be able to make a good guess at how the word should be written&lt;/em>, which will let you look it up if you wish.&lt;/p>
+&lt;p>For Dutch, the &lt;a class="link" href="https://tweedekamer.nl" target="_blank" rel="noopener"
+>Tweede Kamer&lt;/a> record their debates, committees, votes, plenary sessions and so on, and upload them to &lt;a class="link" href="https://debatdirect.tweedekamer.nl" target="_blank" rel="noopener"
+>Debat Gemist&lt;/a>; you may need to click &amp;ldquo;Zoek Debatten&amp;rdquo; on the top right to be able to find a list of possible debates.&lt;/p>
+&lt;h2 id="tip-2-all-dutch-all-the-time">Tip 2: All Dutch, All The Time
+&lt;/h2>&lt;p>Don’t do something in another language if you can try it in Dutch! This applies everywhere:&lt;/p>
+&lt;ul>
+&lt;li>Interactions in public, at work or at home&lt;/li>
+&lt;li>Your computer or mobile phone’s display language&lt;/li>
+&lt;li>Television, radio, magazines and websites&lt;/li>
+&lt;/ul>
+&lt;p>Similarly, try &lt;em>passive listening&lt;/em> &lt;a class="link" href="https://www.hackingchinese.com/listening-strategies-passive-listening/" target="_blank" rel="noopener"
+>link 1&lt;/a> &lt;a class="link" href="https://refold.la/roadmap/stage-0/c/passive-listening" target="_blank" rel="noopener"
+>link 2.&lt;/a>; half-listening to Dutch podcasts, videos or even music whilst you do other things.&lt;/p>
+&lt;p>For this and the tip above, nothing beats a cheap pair or Bluetooth earphones. If you don&amp;rsquo;t already have something suitable, something like &lt;a class="link" href="https://www.amazon.nl/JBL-oordopjes-ge%c3%afntegreerde-Afspeeltijd-oplaadcase/dp/B09KVCHF35/ref=sr_1_15?keywords=jbl&amp;#43;flex&amp;amp;sr=8-15" target="_blank" rel="noopener"
+>these&lt;/a> would be ideal. Keep them on you &lt;em>all the time&lt;/em>, it will let you make use of any spare time you can: on public transport; at work whilst you are doing something easy or repetitive; before bedtime, etc.&lt;/p>
+&lt;p>By doing this, you are exposing yourself to the language&amp;rsquo;s sounds over and over again. This is important for the reasons listed earlier on.&lt;/p>
+&lt;h2 id="tip-3-try-chorusing-and-shadowing">Tip 3: Try Chorusing And Shadowing
+&lt;/h2>&lt;p>Chorusing and shadowing are two techniques to help you perfect the sounds of the language, both in your mind and in your voice.&lt;/p>
+&lt;p>The technique is basically just recording yourself repeatedly repeating native audio until you get it mostly perfect. The difference between chorusing and shadowing is largely just when you speak; either at the same time as the native audio, or directly after.&lt;/p>
+&lt;p>I will direct you to &lt;a class="link" href="https://www.chorusing.com/tips.php" target="_blank" rel="noopener"
+>this website&lt;/a> for some handy videos on how to do this.&lt;/p>
+&lt;p>It might seem strange to do this, but it is very effective.&lt;/p>
+&lt;h1 id="working-smart-beats-working-hard">Working Smart Beats Working Hard
+&lt;/h1>&lt;h2 id="tip-4-use-spaced-repetition-software-ie-anki">Tip 4: Use Spaced Repetition Software (i.e. Anki)
+&lt;/h2>&lt;p>So much has been written about SRS and Anki which is better than I could write, that I’ll just give you some one-liners and ask you to google them:&lt;/p>
+&lt;ul>
+&lt;li>&lt;strong>SRS&lt;/strong>, or spaced repetition system, is basically a system that prompts you to review and recall information at optimum moment, so that you don’t work more than you have to and yet also don’t forget; usually this takes the form of flashcards.&lt;/li>
+&lt;li>&lt;strong>&lt;a class="link" href="http://ankiweb.net" target="_blank" rel="noopener"
+>Anki&lt;/a>&lt;/strong> is the canonical SRS software, free and open source on PC/Mac, free on Android as AnkiDroid and paid for approx. 29€ (one-off) on iOS.&lt;/li>
+&lt;/ul>
+&lt;p>For a more detailed, algorithmic look at Anki and SRS, please see this &lt;a class="link" href="https://www.juliensobczak.com/inspect/2022/05/30/anki-srs.html" target="_blank" rel="noopener"
+>amazing blog post&lt;/a>.&lt;/p>
+&lt;p>Additionally, there are very many &amp;ldquo;Anki decks&amp;rdquo; which are &lt;a class="link" href="https://ankiweb.net/shared/decks" target="_blank" rel="noopener"
+>available to download for free&lt;/a>, many of which are of great quality (I have made a couple myself!) There are also some &lt;a class="link" href="https://speakada.com/anki-dutch-flashcards/" target="_blank" rel="noopener"
+>for sale&lt;/a> but I would try your luck with free resources first.&lt;/p>
+&lt;p>By using these, you will optimise your time and effort, minimising the amount of time you need to spend studying by reviewing only what you need to to avoid forgetting, at the last possible moment.&lt;/p>
+&lt;h2 id="tip-5-a-little-bit-every-day-beats-a-large-chunk-now-and-then">Tip 5: A Little Bit Every Day Beats A Large Chunk Now And Then
+&lt;/h2>&lt;p>Linked to the above, it’s far better to study a little often, than to wait until the weekend and then do some hours.&lt;/p>
+&lt;p>By all means, spend those hours on the weekend if you want, but not at the expense of those 15 minutes a day. 15 minutes a day should be your goal, every single day. It can be hard, but is definitely doable. Once you make a habit of it, it will be easier to stick to.&lt;/p>
+&lt;p>Only you know what suits your lifestyle, but this approach is &lt;a class="link" href="https://www.apa.org/gradpsych/2011/11/study-smart#:~:text=Space%20Your%20Study%20Sessions&amp;amp;text=Decades%20of%20research%20have%20demonstrated,12%20hours%20into%20week%20four." target="_blank" rel="noopener"
+>proven to work&lt;/a>, so try your best to make it work for you.&lt;/p>
+&lt;h2 id="tip-6-try-memory-techniques">Tip 6: Try Memory Techniques
+&lt;/h2>&lt;p>Again, I will defer to others who have written far more eloquently than I can about this topic, but learning in particular about how to build and use a &lt;a class="link" href="https://artofmemory.com/blog/how-to-build-a-memory-palace/" target="_blank" rel="noopener"
+>memory palace&lt;/a> is a very good idea.&lt;/p>
+&lt;p>Dr Lynne Kelly has authored a &lt;a class="link" href="https://www.amazon.nl/Memory-Craft-Dr-Lynne-Kelly/dp/1760633054/ref=sr_1_5?__mk_nl_NL=%c3%85M%c3%85%c5%bd%c3%95%c3%91&amp;amp;crid=2UBJVT7E1OSH8&amp;amp;keywords=memory&amp;#43;techniques&amp;amp;sprefix=memory&amp;#43;techniques%2Caps%2C83&amp;amp;sr=8-5" target="_blank" rel="noopener"
+>great book&lt;/a> on the topic of memory techniques and the people over at the &lt;a class="link" href="https://artofmemory.com" target="_blank" rel="noopener"
+>Art of Memory&lt;/a> &lt;a class="link" href="https://forum.artofmemory.com" target="_blank" rel="noopener"
+>forum&lt;/a> are very kind and helpful. Anthony Metivier has also written a great number of books on this topic; &lt;a class="link" href="https://www.amazon.nl/How-Learn-Memorize-German-Vocabulary-ebook/dp/B019T6OYQQ/ref=tmm_kin_swatch_0?_encoding=UTF8&amp;amp;sr=" target="_blank" rel="noopener"
+>this one on German vocabulary&lt;/a> would be very helpful learning [[Dutch]] too, since the memory techniques are language-agnostic and German is so similar to [[Dutch]] f these memory tools.&lt;/p>
+&lt;h1 id="the-right-resources-last-a-lifetime">The Right Resources Last A Lifetime
+&lt;/h1>&lt;h2 id="tip-7-find-a-teacher">Tip 7: find a teacher
+&lt;/h2>&lt;p>Language may be one of the most difficult things to teach yourself&lt;/p>
+&lt;p>For one, it&amp;rsquo;s not too easy to correct yourself. You can&amp;rsquo;t just put some words into a calculator and check if they match some predetermined answer. Since there are often multiple ways to express the same idea, it can be hard to give useful question and answer sets.&lt;/p>
+&lt;p>Any good teacher will be able to correct you in realtime, helping to avoid fossilised mistakes. Good teachers have studied teaching and have studied &lt;em>learning&lt;/em>, meaning that they should be able to help you determine what things to study and how best to approach it.&lt;/p>
+&lt;p>In the Netherlands, I can certainly recommend &lt;a class="link" href="https://www.uvatalen.nl/en/dutch-language-courses" target="_blank" rel="noopener"
+>UvA Talen&lt;/a>&amp;rsquo;s group courses; I took their Chinese classes for some time, until the timing no longer suited my lifestyle.&lt;/p>
+&lt;p>Otherwise, &lt;a class="link" href="https://italki.com" target="_blank" rel="noopener"
+>italki.com&lt;/a> lets you browse and select a language teacher for just about any language. Again, I use this too for Chinese; there will be Dutch teachers on their but they will be more expensive than the ones I am seeing!&lt;/p>
+&lt;h2 id="tip-8-buy-the-right-textbooks">Tip 8: buy the right textbooks
+&lt;/h2>&lt;p>It goes without saying that you should certainly have a textbook. But which one? That is a difficult question to answer without having seen a lot of textbooks!&lt;/p>
+&lt;p>For Dutch, the website &lt;a class="link" href="https://nt2.nl/en/" target="_blank" rel="noopener"
+>NT2.nl&lt;/a> is best (by law, all books in Dutch sold new in the Netherlands must be priced the same, so don&amp;rsquo;t bother shopping around).&lt;/p>
+&lt;ul>
+&lt;li>For grammar, the &lt;a class="link" href="https://www.nt2.nl/en/101-23_Klare-taal" target="_blank" rel="noopener"
+>Klare Taal!&lt;/a> series is very good. I have these.&lt;/li>
+&lt;li>You will also need a dictionary, and &lt;a class="link" href="https://www.nt2.nl/en/lesmateriaal/gevorderden/alle_uitgaven/100-646_Van-Dale-pocketwoordenboek-Nederlands-als-tweede-taal-NT2" target="_blank" rel="noopener"
+>Van Dale&lt;/a> and famous for those. I had one of these too.&lt;/li>
+&lt;/ul>
+&lt;hr>
+&lt;p>Good luck, and have fun!&lt;/p></description></item><item><title>Markdown Syntax Guide</title><link>https://wilsn.cc/2023/09/markdown-syntax-guide/</link><pubDate>Thu, 07 Sep 2023 00:00:00 +0000</pubDate><guid>https://wilsn.cc/2023/09/markdown-syntax-guide/</guid><description>&lt;p>This article offers a sample of basic Markdown syntax that can be used in Hugo content files, also it shows whether basic HTML elements are decorated with CSS in a Hugo theme.&lt;/p>
+&lt;h2 id="headings">Headings
+&lt;/h2>&lt;p>The following HTML &lt;code>&amp;lt;h1&amp;gt;&lt;/code>—&lt;code>&amp;lt;h6&amp;gt;&lt;/code> elements represent six levels of section headings. &lt;code>&amp;lt;h1&amp;gt;&lt;/code> is the highest section level while &lt;code>&amp;lt;h6&amp;gt;&lt;/code> is the lowest.&lt;/p>
+&lt;h1 id="h1">H1
+&lt;/h1>&lt;h2 id="h2">H2
+&lt;/h2>&lt;h3 id="h3">H3
+&lt;/h3>&lt;h4 id="h4">H4
+&lt;/h4>&lt;h5 id="h5">H5
+&lt;/h5>&lt;h6 id="h6">H6
+&lt;/h6>&lt;h2 id="paragraph">Paragraph
+&lt;/h2>&lt;p>Xerum, quo qui aut unt expliquam qui dolut labo. Aque venitatiusda cum, voluptionse latur sitiae dolessi aut parist aut dollo enim qui voluptate ma dolestendit peritin re plis aut quas inctum laceat est volestemque commosa as cus endigna tectur, offic to cor sequas etum rerum idem sintibus eiur? Quianimin porecus evelectur, cum que nis nust voloribus ratem aut omnimi, sitatur? Quiatem. Nam, omnis sum am facea corem alique molestrunt et eos evelece arcillit ut aut eos eos nus, sin conecerem erum fuga. Ri oditatquam, ad quibus unda veliamenimin cusam et facea ipsamus es exerum sitate dolores editium rerore eost, temped molorro ratiae volorro te reribus dolorer sperchicium faceata tiustia prat.&lt;/p>
+&lt;p>Itatur? Quiatae cullecum rem ent aut odis in re eossequodi nonsequ idebis ne sapicia is sinveli squiatum, core et que aut hariosam ex eat.&lt;/p>
+&lt;h2 id="blockquotes">Blockquotes
+&lt;/h2>&lt;p>The blockquote element represents content that is quoted from another source, optionally with a citation which must be within a &lt;code>footer&lt;/code> or &lt;code>cite&lt;/code> element, and optionally with in-line changes such as annotations and abbreviations.&lt;/p>
+&lt;h3 id="blockquote-without-attribution">Blockquote without attribution
+&lt;/h3>&lt;blockquote>
+&lt;p>Tiam, ad mint andaepu dandae nostion secatur sequo quae.
+&lt;strong>Note&lt;/strong> that you can use &lt;em>Markdown syntax&lt;/em> within a blockquote.&lt;/p>
+&lt;/blockquote>
+&lt;h3 id="blockquote-with-attribution">Blockquote with attribution
+&lt;/h3>&lt;blockquote>
+&lt;p>Don&amp;rsquo;t communicate by sharing memory, share memory by communicating.&lt;br>
+— &lt;cite>Rob Pike&lt;sup id="fnref:1">&lt;a href="#fn:1" class="footnote-ref" role="doc-noteref">1&lt;/a>&lt;/sup>&lt;/cite>&lt;/p>
+&lt;/blockquote>
+&lt;h2 id="tables">Tables
+&lt;/h2>&lt;p>Tables aren&amp;rsquo;t part of the core Markdown spec, but Hugo supports supports them out-of-the-box.&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>Name&lt;/th>
+&lt;th>Age&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>Bob&lt;/td>
+&lt;td>27&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>Alice&lt;/td>
+&lt;td>23&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h3 id="inline-markdown-within-tables">Inline Markdown within tables
+&lt;/h3>&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>Italics&lt;/th>
+&lt;th>Bold&lt;/th>
+&lt;th>Code&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>&lt;em>italics&lt;/em>&lt;/td>
+&lt;td>&lt;strong>bold&lt;/strong>&lt;/td>
+&lt;td>&lt;code>code&lt;/code>&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>A&lt;/th>
+&lt;th>B&lt;/th>
+&lt;th>C&lt;/th>
+&lt;th>D&lt;/th>
+&lt;th>E&lt;/th>
+&lt;th>F&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>Lorem ipsum dolor sit amet, consectetur adipiscing elit.&lt;/td>
+&lt;td>Phasellus ultricies, sapien non euismod aliquam, dui ligula tincidunt odio, at accumsan nulla sapien eget ex.&lt;/td>
+&lt;td>Proin eleifend dictum ipsum, non euismod ipsum pulvinar et. Vivamus sollicitudin, quam in pulvinar aliquam, metus elit pretium purus&lt;/td>
+&lt;td>Proin sit amet velit nec enim imperdiet vehicula.&lt;/td>
+&lt;td>Ut bibendum vestibulum quam, eu egestas turpis gravida nec&lt;/td>
+&lt;td>Sed scelerisque nec turpis vel viverra. Vivamus vitae pretium sapien&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h2 id="code-blocks">Code Blocks
+&lt;/h2>&lt;h3 id="code-block-with-backticks">Code block with backticks
+&lt;/h3>&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-html" data-lang="html">&lt;span class="line">&lt;span class="cl">&lt;span class="cp">&amp;lt;!doctype html&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">&amp;lt;&lt;/span>&lt;span class="nt">html&lt;/span> &lt;span class="na">lang&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s">&amp;#34;en&amp;#34;&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">&amp;lt;&lt;/span>&lt;span class="nt">head&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">&amp;lt;&lt;/span>&lt;span class="nt">meta&lt;/span> &lt;span class="na">charset&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s">&amp;#34;utf-8&amp;#34;&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">&amp;lt;&lt;/span>&lt;span class="nt">title&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>Example HTML5 Document&lt;span class="p">&amp;lt;/&lt;/span>&lt;span class="nt">title&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">&amp;lt;/&lt;/span>&lt;span class="nt">head&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">&amp;lt;&lt;/span>&lt;span class="nt">body&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">&amp;lt;&lt;/span>&lt;span class="nt">p&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>Test&lt;span class="p">&amp;lt;/&lt;/span>&lt;span class="nt">p&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">&amp;lt;/&lt;/span>&lt;span class="nt">body&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">&amp;lt;/&lt;/span>&lt;span class="nt">html&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h3 id="code-block-indented-with-four-spaces">Code block indented with four spaces
+&lt;/h3>&lt;pre>&lt;code>&amp;lt;!doctype html&amp;gt;
+&amp;lt;html lang=&amp;quot;en&amp;quot;&amp;gt;
+&amp;lt;head&amp;gt;
+&amp;lt;meta charset=&amp;quot;utf-8&amp;quot;&amp;gt;
+&amp;lt;title&amp;gt;Example HTML5 Document&amp;lt;/title&amp;gt;
+&amp;lt;/head&amp;gt;
+&amp;lt;body&amp;gt;
+&amp;lt;p&amp;gt;Test&amp;lt;/p&amp;gt;
+&amp;lt;/body&amp;gt;
+&amp;lt;/html&amp;gt;
+&lt;/code>&lt;/pre>
+&lt;h3 id="diff-code-block">Diff code block
+&lt;/h3>&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;span class="lnt">5
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-diff" data-lang="diff">&lt;span class="line">&lt;span class="cl">[dependencies.bevy]
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">git = &amp;#34;https://github.com/bevyengine/bevy&amp;#34;
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">rev = &amp;#34;11f52b8c72fc3a568e8bb4a4cd1f3eb025ac2e13&amp;#34;
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="gd">- features = [&amp;#34;dynamic&amp;#34;]
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="gd">&lt;/span>&lt;span class="gi">+ features = [&amp;#34;jpeg&amp;#34;, &amp;#34;dynamic&amp;#34;]
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h3 id="one-line-code-block">One line code block
+&lt;/h3>&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-html" data-lang="html">&lt;span class="line">&lt;span class="cl">&lt;span class="p">&amp;lt;&lt;/span>&lt;span class="nt">p&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>A paragraph&lt;span class="p">&amp;lt;/&lt;/span>&lt;span class="nt">p&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h2 id="list-types">List Types
+&lt;/h2>&lt;h3 id="ordered-list">Ordered List
+&lt;/h3>&lt;ol>
+&lt;li>First item&lt;/li>
+&lt;li>Second item&lt;/li>
+&lt;li>Third item&lt;/li>
+&lt;/ol>
+&lt;h3 id="unordered-list">Unordered List
+&lt;/h3>&lt;ul>
+&lt;li>List item&lt;/li>
+&lt;li>Another item&lt;/li>
+&lt;li>And another item&lt;/li>
+&lt;/ul>
+&lt;h3 id="nested-list">Nested list
+&lt;/h3>&lt;ul>
+&lt;li>Fruit
+&lt;ul>
+&lt;li>Apple&lt;/li>
+&lt;li>Orange&lt;/li>
+&lt;li>Banana&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Dairy
+&lt;ul>
+&lt;li>Milk&lt;/li>
+&lt;li>Cheese&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;h2 id="other-elements--abbr-sub-sup-kbd-mark">Other Elements — abbr, sub, sup, kbd, mark
+&lt;/h2>&lt;p>&lt;abbr title="Graphics Interchange Format">GIF&lt;/abbr> is a bitmap image format.&lt;/p>
+&lt;p>H&lt;sub>2&lt;/sub>O&lt;/p>
+&lt;p>X&lt;sup>n&lt;/sup> + Y&lt;sup>n&lt;/sup> = Z&lt;sup>n&lt;/sup>&lt;/p>
+&lt;p>Press &lt;kbd>CTRL&lt;/kbd> + &lt;kbd>ALT&lt;/kbd> + &lt;kbd>Delete&lt;/kbd> to end the session.&lt;/p>
+&lt;p>Most &lt;mark>salamanders&lt;/mark> are nocturnal, and hunt for insects, worms, and other small creatures.&lt;/p>
+&lt;div class="footnotes" role="doc-endnotes">
+&lt;hr>
+&lt;ol>
+&lt;li id="fn:1">
+&lt;p>The above quote is excerpted from Rob Pike&amp;rsquo;s &lt;a class="link" href="https://www.youtube.com/watch?v=PAAkCSZUG1c" target="_blank" rel="noopener"
+>talk&lt;/a> during Gopherfest, November 18, 2015.&amp;#160;&lt;a href="#fnref:1" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div></description></item><item><title>Image gallery</title><link>https://wilsn.cc/2023/08/image-gallery/</link><pubDate>Sat, 26 Aug 2023 00:00:00 +0000</pubDate><guid>https://wilsn.cc/2023/08/image-gallery/</guid><description>&lt;img src="https://wilsn.cc/2023/08/image-gallery/2.jpg" alt="Featured image of post Image gallery" />&lt;p>Hugo theme Stack supports the creation of interactive image galleries using Markdown. It&amp;rsquo;s powered by &lt;a class="link" href="https://photoswipe.com/" target="_blank" rel="noopener"
+>PhotoSwipe&lt;/a> and its syntax was inspired by &lt;a class="link" href="https://typlog.com/" target="_blank" rel="noopener"
+>Typlog&lt;/a>.&lt;/p>
+&lt;p>To use this feature, the image must be in the same directory as the Markdown file, as it uses Hugo&amp;rsquo;s page bundle feature to read the dimensions of the image. &lt;strong>External images are not supported.&lt;/strong>&lt;/p>
+&lt;h2 id="syntax">Syntax
+&lt;/h2>&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-markdown" data-lang="markdown">&lt;span class="line">&lt;span class="cl">![&lt;span class="nt">Image 1&lt;/span>](&lt;span class="na">1.jpg&lt;/span>) ![&lt;span class="nt">Image 2&lt;/span>](&lt;span class="na">2.jpg&lt;/span>)
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h2 id="result">Result
+&lt;/h2>&lt;p>&lt;img src="https://wilsn.cc/2023/08/image-gallery/1.jpg"
+width="2000"
+height="1400"
+srcset="https://wilsn.cc/2023/08/image-gallery/1_hu4574578169203714971.jpg 480w, https://wilsn.cc/2023/08/image-gallery/1_hu9042511268598201431.jpg 1024w"
+loading="lazy"
+alt="Image 1"
+class="gallery-image"
+data-flex-grow="142"
+data-flex-basis="342px"
+> &lt;img src="https://wilsn.cc/2023/08/image-gallery/2.jpg"
+width="1500"
+height="2250"
+srcset="https://wilsn.cc/2023/08/image-gallery/2_hu10699635480308914167.jpg 480w, https://wilsn.cc/2023/08/image-gallery/2_hu1741040415904021193.jpg 1024w"
+loading="lazy"
+alt="Image 2"
+class="gallery-image"
+data-flex-grow="66"
+data-flex-basis="160px"
+>&lt;/p>
+&lt;blockquote>
+&lt;p>Photo by &lt;a class="link" href="https://unsplash.com/@mymind" target="_blank" rel="noopener"
+>mymind&lt;/a> and &lt;a class="link" href="https://unsplash.com/@lukechesser" target="_blank" rel="noopener"
+>Luke Chesser&lt;/a> on &lt;a class="link" href="https://unsplash.com/" target="_blank" rel="noopener"
+>Unsplash&lt;/a>&lt;/p>
+&lt;/blockquote></description></item><item><title>Shortcodes</title><link>https://wilsn.cc/2023/08/shortcodes/</link><pubDate>Fri, 25 Aug 2023 00:00:00 +0000</pubDate><guid>https://wilsn.cc/2023/08/shortcodes/</guid><description>&lt;img src="https://wilsn.cc/2023/08/shortcodes/cover.jpg" alt="Featured image of post Shortcodes" />&lt;p>For more details, check out the &lt;a class="link" href="https://stack.jimmycai.com/writing/shortcodes" target="_blank" rel="noopener"
+>documentation&lt;/a>.&lt;/p>
+&lt;h2 id="bilibili-video">Bilibili video
+&lt;/h2>
+&lt;div class="video-wrapper">
+&lt;iframe src="https://player.bilibili.com/player.html?as_wide=1&amp;amp;high_quality=1&amp;amp;page=1&amp;bvid=BV1d4411N7zD"
+scrolling="no"
+frameborder="no"
+framespacing="0"
+allowfullscreen="true"
+>
+&lt;/iframe>
+&lt;/div>
+&lt;h2 id="tencent-video">Tencent video
+&lt;/h2>
+&lt;div class="video-wrapper">
+&lt;iframe src="https://v.qq.com/txp/iframe/player.html?vid=g0014r3khdw&amp;auto=0"
+scrolling="no"
+frameborder="no"
+framespacing="0"
+allowfullscreen="true"
+>
+&lt;/iframe>
+&lt;/div>
+&lt;h2 id="youtube-video">YouTube video
+&lt;/h2>&lt;div class="video-wrapper">
+&lt;iframe loading="lazy"
+src="https://www.youtube.com/embed/0qwALOOvUik"
+allowfullscreen
+title="YouTube Video"
+>
+&lt;/iframe>
+&lt;/div>
+&lt;h2 id="generic-video-file">Generic video file
+&lt;/h2>&lt;div class="video-wrapper">
+&lt;video
+controls
+src="https://www.w3schools.com/tags/movie.mp4"
+>
+&lt;p>
+Your browser doesn't support HTML5 video. Here is a
+&lt;a href="https://www.w3schools.com/tags/movie.mp4">link to the video&lt;/a> instead.
+&lt;/p>
+&lt;/video>
+&lt;/div>
+&lt;h2 id="gist">Gist
+&lt;/h2>&lt;script src="https://gist.github.com/CaiJimmy/e2751a943de10b2a5b3a8a6c2120cb86.js">&lt;/script>
+&lt;h2 id="gitlab">GitLab
+&lt;/h2>&lt;script
+type="application/javascript"
+src="https://gitlab.com/-/snippets/2589724.js"
+>&lt;/script>
+&lt;h2 id="quote">Quote
+&lt;/h2>&lt;blockquote>
+&lt;p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>A famous person, &lt;/span>&lt;a href="https://en.wikipedia.org/wiki/Book">&lt;cite>The book they wrote&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
+&lt;hr>
+&lt;blockquote>
+&lt;p>Photo by &lt;a class="link" href="https://unsplash.com/@codioful" target="_blank" rel="noopener"
+>Codioful&lt;/a> on &lt;a class="link" href="https://unsplash.com/photos/WDSN62Qdxuk" target="_blank" rel="noopener"
+>Unsplash&lt;/a>&lt;/p>
+&lt;/blockquote></description></item><item><title>Math Typesetting</title><link>https://wilsn.cc/2023/08/math-typesetting/</link><pubDate>Thu, 24 Aug 2023 00:00:00 +0000</pubDate><guid>https://wilsn.cc/2023/08/math-typesetting/</guid><description>&lt;p>Stack has built-in support for math typesetting using &lt;a class="link" href="https://katex.org/" target="_blank" rel="noopener"
+>KaTeX&lt;/a>.&lt;/p>
+&lt;p>&lt;strong>It&amp;rsquo;s not enabled by default side-wide,&lt;/strong> but you can enable it for individual posts by adding &lt;code>math: true&lt;/code> to the front matter. Or you can enable it side-wide by adding &lt;code>math = true&lt;/code> to the &lt;code>params.article&lt;/code> section in &lt;code>config.toml&lt;/code>.&lt;/p>
+&lt;h2 id="inline-math">Inline math
+&lt;/h2>&lt;p>This is an inline mathematical expression: $\varphi = \dfrac{1+\sqrt5}{2}= 1.6180339887…$&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-markdown" data-lang="markdown">&lt;span class="line">&lt;span class="cl">$\varphi = \dfrac{1+\sqrt5}{2}= 1.6180339887…$
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h2 id="block-math">Block math
+&lt;/h2>$$
+\varphi = 1+\frac{1} {1+\frac{1} {1+\frac{1} {1+\cdots} } }
+$$&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-markdown" data-lang="markdown">&lt;span class="line">&lt;span class="cl">$$
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> \varphi = 1+\frac{1} {1+\frac{1} {1+\frac{1} {1+\cdots} } }
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">$$
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>$$
+f(x) = \int_{-\infty}^\infty\hat f(\xi)\,e^{2 \pi i \xi x}\,d\xi
+$$&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-markdown" data-lang="markdown">&lt;span class="line">&lt;span class="cl">$$
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> f(x) = \int_{-\infty}^\infty\hat f(\xi)\,e^{2 \pi i \xi x}\,d\xi
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">$$
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div></description></item><item><title>Archives</title><link>https://wilsn.cc/archives/</link><pubDate>Sun, 06 Mar 2022 00:00:00 +0000</pubDate><guid>https://wilsn.cc/archives/</guid><description/></item><item><title>Hello World</title><link>https://wilsn.cc/2022/03/hello-world/</link><pubDate>Sun, 06 Mar 2022 00:00:00 +0000</pubDate><guid>https://wilsn.cc/2022/03/hello-world/</guid><description>&lt;img src="https://wilsn.cc/2022/03/hello-world/cover.jpg" alt="Featured image of post Hello World" />&lt;p>Welcome to Hugo theme Stack. This is your first post. Edit or delete it, then start writing!&lt;/p>
+&lt;p>For more information about this theme, check the documentation: &lt;a class="link" href="https://stack.jimmycai.com/" target="_blank" rel="noopener"
+>https://stack.jimmycai.com/&lt;/a>&lt;/p>
+&lt;p>Want a site like this? Check out &lt;a class="link" href="https://github.com/CaiJimmy/hugo-theme-stack-starter" target="_blank" rel="noopener"
+>hugo-theme-stack-stater&lt;/a>&lt;/p>
+&lt;blockquote>
+&lt;p>Photo by &lt;a class="link" href="https://unsplash.com/@pawel_czerwinski" target="_blank" rel="noopener"
+>Pawel Czerwinski&lt;/a> on &lt;a class="link" href="https://unsplash.com/" target="_blank" rel="noopener"
+>Unsplash&lt;/a>&lt;/p>
+&lt;/blockquote></description></item><item><title>Links</title><link>https://wilsn.cc/links/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://wilsn.cc/links/</guid><description>&lt;p>To use this feature, add &lt;code>links&lt;/code> section to frontmatter.&lt;/p>
+&lt;p>This page&amp;rsquo;s frontmatter:&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;span class="lnt">5
+&lt;/span>&lt;span class="lnt">6
+&lt;/span>&lt;span class="lnt">7
+&lt;/span>&lt;span class="lnt">8
+&lt;/span>&lt;span class="lnt">9
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-yaml" data-lang="yaml">&lt;span class="line">&lt;span class="cl">&lt;span class="nt">links&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="nt">title&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">GitHub&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">description&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">GitHub is the world&amp;#39;s largest software development platform.&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">website&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">https://github.com&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">image&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="nt">title&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">TypeScript&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">description&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">TypeScript is a typed superset of JavaScript that compiles to plain JavaScript.&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">website&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">https://www.typescriptlang.org&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">image&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">ts-logo-128.jpg&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>&lt;code>image&lt;/code> field accepts both local and external images.&lt;/p></description></item><item><title>Search</title><link>https://wilsn.cc/search/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://wilsn.cc/search/</guid><description/></item></channel></rss>
